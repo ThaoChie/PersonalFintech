@@ -1,0 +1,17 @@
+# Backend (.NET)
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.local/
+**/.aspnet/
+**/Library/
+
+# Frontend (React / Vite)
+**/node_modules/
+**/dist/
+**/build/
+
+# OS & Environment
+.DS_Store
+*.log
