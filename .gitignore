@@ -15,3 +15,18 @@
 # OS & Environment
 .DS_Store
 *.log
+.env.local
+.env.*.local
+
+# Scripts & Internal Tools
+*.sh
+
+# Non-operational documents (chỉ giữ lại README.md)
+*.md
+!README.md
+Yêu cầu UI*
+Yêu cầu UI/
+/logoVJU.png
+
+# Test suites (không thuộc mã nguồn chạy hệ thống)
+Tests/

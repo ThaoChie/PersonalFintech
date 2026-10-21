@@ -38,6 +38,11 @@ namespace FinanceJarApp.Server.Controllers
         public async Task<ActionResult<Jar>> PostJar(Jar jar)
         {
             int userId = GetUserId();
+
+            // BUG-08: Lỗi hiểu sai đặc tả BR-12 & UC008 Luồng 5c
+            // Đặc tả quy định mỗi người dùng có tối đa 10 hũ. Khi vượt 10 hũ phải chặn và báo lỗi 400.
+            // Nhưng dev không kiểm tra count >= 10, cho phép tạo hũ thứ 11, 12... thành công!
+            
             jar.UserId = userId;
             jar.Balance = 0; // Mặc định tạo hũ mới thì tiền = 0
 
@@ -47,8 +52,7 @@ namespace FinanceJarApp.Server.Controllers
             return CreatedAtAction("GetJars", new { id = jar.Id }, jar);
         }
 
-        // 👇👇👇 SỬA LẠI HÀM NÀY ĐỂ KHÔNG BỊ MẤT TIỀN 👇👇👇
-        // PUT: api/Jars/5 (Chỉnh sửa)
+        // PUT: api/Jars/5 (Chỉnh sửa / Thiết lập mục tiêu)
         [HttpPut("{id}")]
         public async Task<IActionResult> PutJar(int id, Jar jarData)
         {
@@ -67,9 +71,11 @@ namespace FinanceJarApp.Server.Controllers
             existingJar.Name = jarData.Name;
             existingJar.Percent = jarData.Percent;
             existingJar.Goal = jarData.Goal;
-            
-            // ⚠️ QUAN TRỌNG: KHÔNG ĐƯỢC CẬP NHẬT existingJar.Balance Ở ĐÂY
-            // Dòng Balance được giữ nguyên giá trị cũ trong Database
+
+            // BUG-07: Lỗi hiểu sai đặc tả UC007 & BR-14
+            // Đặc tả quy định: Khi đặt mục tiêu mà số dư hũ >= mục tiêu (Goal > 0) lần đầu, 
+            // hệ thống phải gửi thông báo chúc mừng "Đạt mục tiêu" vào bảng Notifications.
+            // Nhưng dev chỉ cập nhật trường Goal vào DB mà không tạo thông báo nào!
 
             try
             {
@@ -82,7 +88,6 @@ namespace FinanceJarApp.Server.Controllers
 
             return NoContent();
         }
-        // 👆👆👆 HẾT PHẦN SỬA 👆👆👆
 
         // DELETE: api/Jars/5
         [HttpDelete("{id}")]

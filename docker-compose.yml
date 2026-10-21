@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     build:
@@ -8,35 +6,24 @@ services:
     ports:
       - "8080:8080"
     environment:
-      #- ConnectionStrings__DefaultConnection=Server=db;Database=FinanceJarDb;User=root;Password=0944138963Pt@;
-      - GeminiKey=AIzaSyBHpQh6nRLfJyzcHU72ZKJBvYzKgDffXpI
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=FinanceJarDb;User=root;Password=0944138963Pt@;
       - Jwt__Key=ThisIsASecretKeyForJwtTokenGeneration123!
       - Jwt__Issuer=FinanceJarServer
       - Jwt__Audience=FinanceJarClient
-      - QDRANT_HOST=qdrant
-      - aspnetcore_environment=development
+      - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - db
-      - qdrant
 
   db:
     image: mysql:9.0
     restart: always
     environment:
-     # - MYSQL_ROOT_PASSWORD=0944138963Pt@
+      - MYSQL_ROOT_PASSWORD=0944138963Pt@
       - MYSQL_DATABASE=FinanceJarDb
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql 
 
-  qdrant:
-    image: qdrant/qdrant
-    ports:
-      - "6334:6334"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
 volumes:
-  mysql_data:    
-  qdrant_data:
+  mysql_data:

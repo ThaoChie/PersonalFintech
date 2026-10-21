@@ -25,18 +25,29 @@ namespace FinanceJarApp.Server.Controllers
             return idClaim != null ? int.Parse(idClaim) : 0;
         }
 
-        // GET: api/Transactions (Lấy lịch sử giao dịch)
+        // GET: api/Transactions (Lấy lịch sử giao dịch & Tìm kiếm)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Transaction>>> GetTransactions()
+        public async Task<ActionResult<IEnumerable<Transaction>>> GetTransactions([FromQuery] string? keyword = null)
         {
             int userId = GetUserId();
 
-            // 👇 Lọc giao dịch: Phải join vào bảng Jar để check UserId
-            return await _context.Transactions
+            var query = _context.Transactions
                 .Include(t => t.Jar) // Kèm thông tin Hũ
-                .Where(t => t.Jar.UserId == userId) // Chỉ lấy nếu Hũ thuộc về User này
-                .OrderByDescending(t => t.Date) // Mới nhất lên đầu
-                .ToListAsync();
+                .Where(t => t.Jar.UserId == userId)
+                .OrderByDescending(t => t.Date);
+
+            var list = await query.ToListAsync();
+
+            // BUG-11: Lỗi ngoài đặc tả - Tìm kiếm giao dịch bằng Regex không escape ký tự đặc biệt
+            // Khi keyword chứa các ký tự đặc biệt như '[', '\', '(', '?',
+            // new Regex(keyword) ném ra unhandled ArgumentException làm API trả về 500 Internal Server Error
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                var regex = new System.Text.RegularExpressions.Regex(keyword, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                list = list.Where(t => regex.IsMatch(t.Description ?? "") || (t.Jar != null && regex.IsMatch(t.Jar.Name ?? ""))).ToList();
+            }
+
+            return Ok(list);
         }
 
         // POST: api/Transactions (Thêm giao dịch mới)
@@ -45,8 +56,46 @@ namespace FinanceJarApp.Server.Controllers
         {
             int userId = GetUserId();
 
-            // 1. Kiểm tra xem Hũ (JarId) gửi lên có phải của User này không?
-            // (Tránh trường hợp User A hack gửi tiền vào hũ của User B)
+            // BUG-09: Lỗi hiểu sai đặc tả Bảng 2.6.9 & Luồng 6a
+            // Đặc tả quy định Ngày giao dịch không được ở tương lai.
+            // Nhưng dev không kiểm tra dto.Date > DateTime.Today, cho phép lưu giao dịch với ngày tương lai
+
+            // 1. Giao dịch Thu nhập: Phân bổ tự động vào các hũ (BR-07)
+            if (dto.Amount > 0)
+            {
+                var userJars = await _context.Jars.Where(j => j.UserId == userId).ToListAsync();
+
+                // BUG-12: Lỗi ngoài đặc tả - Phân bổ thu nhập khi người dùng không có hũ nào (hoặc hũ bị xóa hết)
+                // Dev giả định luôn có hũ và gọi .First() trực tiếp mà không kiểm tra userJars.Count == 0,
+                // ném ra ngoại lệ InvalidOperationException ("Sequence contains no elements") gây lỗi 500
+                var primaryJar = userJars.OrderByDescending(j => j.Percent).First();
+
+                var trans = new Transaction
+                {
+                    Description = dto.Description,
+                    Amount = dto.Amount,
+                    Date = dto.Date,
+                    JarId = primaryJar.Id
+                };
+
+                decimal distributedTotal = 0;
+                foreach (var j in userJars)
+                {
+                    if (j.Id != primaryJar.Id)
+                    {
+                        decimal share = Math.Round(dto.Amount * (decimal)(j.Percent / 100.0), 0);
+                        j.Balance += share;
+                        distributedTotal += share;
+                    }
+                }
+                primaryJar.Balance += (dto.Amount - distributedTotal);
+
+                _context.Transactions.Add(trans);
+                await _context.SaveChangesAsync();
+                return Ok(trans);
+            }
+
+            // 2. Giao dịch Chi tiêu: Kiểm tra Hũ (JarId)
             var jar = await _context.Jars.FirstOrDefaultAsync(j => j.Id == dto.JarId && j.UserId == userId);
             
             if (jar == null)
@@ -54,7 +103,6 @@ namespace FinanceJarApp.Server.Controllers
                 return BadRequest("Hũ không tồn tại hoặc không thuộc về bạn!");
             }
 
-            // 2. Tạo giao dịch
             var transaction = new Transaction
             {
                 Description = dto.Description,
@@ -63,7 +111,6 @@ namespace FinanceJarApp.Server.Controllers
                 JarId = dto.JarId
             };
 
-            // 3. Cập nhật số dư của Hũ
             jar.Balance += dto.Amount;
 
             _context.Transactions.Add(transaction);

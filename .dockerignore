@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.local/
+**/.aspnet/
+**/*.user
+.DS_Store
+ClientReact/node_modules/
+ClientReact/dist/
+ClientReact/build/
+Tests/
+Library/

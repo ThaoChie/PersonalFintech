@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.local/
+**/.aspnet/
+**/*.user
+.DS_Store
