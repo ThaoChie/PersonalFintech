@@ -20,6 +20,8 @@ Hệ thống cung cấp trải nghiệm theo dõi tài sản thời gian thực,
 
 Ứng dụng được thiết kế theo phong cách tối giản chuẩn **VJU Style** (sử dụng các gam màu chủ đạo Đỏ Bordeaux, Trắng, Xám ghi nhạt) mang lại sự trang nhã, hiện đại và tập trung tối đa vào dữ liệu tài chính của người dùng.
 
+Target URL: https://personal-fintech-pink.vercel.app/
+
 ---
 
 ## 2. Phạm vi nghiệp vụ & 13 Use Cases cốt lõi (Core Scope)
