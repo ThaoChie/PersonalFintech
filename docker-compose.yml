@@ -1,4 +1,7 @@
 services:
+  # ==========================================
+  # 1. Backend Service (ASP.NET Core 9 Web API)
+  # ==========================================
   api:
     build:
       context: ./Server
@@ -6,18 +9,30 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # [HƯỚNG DẪN CẤU HÌNH KẾT NỐI DATABASE]:
+      # Thay thế 'YOUR_PASSWORD' bằng mật khẩu root của MySQL (phải trùng khớp với MYSQL_ROOT_PASSWORD bên dưới)
       - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=FinanceJarDb;User=root;Password=YOUR_PASSWORD;
-      - Jwt__Key=ThisIsASecretKeyForJwtTokenGeneration123!
+
+      # [HƯỚNG DẪN CẤU HÌNH JWT AUTHENTICATION]:
+      # Chuỗi khóa bí mật dùng để ký và thẩm định JWT Token (yêu cầu tối thiểu 32 ký tự để đảm bảo an toàn)
+      - Jwt__Key=YOUR_SECRET_KEY_FOR_JWT_TOKEN_GENERATION_MINIMUM_32_CHARS!
       - Jwt__Issuer=FinanceJarServer
       - Jwt__Audience=FinanceJarClient
+
+      # Môi trường chạy ứng dụng (Development hoặc Production)
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - db
 
+  # ==========================================
+  # 2. Database Service (MySQL 9.0)
+  # ==========================================
   db:
     image: mysql:9.0
     restart: always
     environment:
+      # [HƯỚNG DẪN CẤU HÌNH MẬT KHẨU CƠ SỞ DỮ LIỆU]:
+      # Thay thế 'YOUR_PASSWORD' bằng mật khẩu quản trị MySQL bạn muốn thiết lập
       - MYSQL_ROOT_PASSWORD=YOUR_PASSWORD
       - MYSQL_DATABASE=FinanceJarDb
     ports:
@@ -25,5 +40,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql 
 
+# Volume lưu trữ dữ liệu MySQL bền vững
 volumes:
   mysql_data:

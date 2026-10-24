@@ -145,8 +145,8 @@ graph TD
 docker compose up -d db
 ```
 * **Cổng**: `localhost:3306`
-* **Database**: `FinanceJarDb`
-* **Tài khoản**: `root` / Mật khẩu: `0944138963Pt@`
+* **Tài khoản**: `root` / Mật khẩu: `YOUR_PASSWORD` *(Cấu hình trong `docker-compose.yml` hoặc `Server/appsettings.json`)*
+> **Lưu ý bảo mật:** Hãy thay đổi giá trị `YOUR_PASSWORD` bằng mật khẩu an toàn của riêng bạn trước khi triển khai.
 
 ### Bước 2: Khởi động Backend API (.NET)
 ```bash
