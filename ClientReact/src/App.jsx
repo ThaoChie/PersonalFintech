@@ -101,17 +101,18 @@ function App() {
         {isAuthenticated && <Sidebar onOpenGlobalModal={() => setIsModalOpen(true)} />}
 
         <main 
-          className="flex-grow-1 p-4" 
+          className={`flex-grow-1 ${isAuthenticated ? 'p-4' : 'p-0'}`} 
           style={{ 
             marginLeft: isAuthenticated ? '240px' : '0', 
             marginTop: isAuthenticated ? '56px' : '0', 
-            backgroundColor: '#F9FAFB', 
+            backgroundColor: isAuthenticated ? '#F9FAFB' : '#FFFFFF', 
             minHeight: isAuthenticated ? 'calc(100vh - 56px)' : '100vh',
             transition: 'all 0.3s' 
           }}
         >
           <Routes>
-            <Route path="/login" element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
+            <Route path="/login" element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} initialMode="login" /> : <Navigate to="/" />} />
+            <Route path="/register" element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} initialMode="register" /> : <Navigate to="/" />} />
             
             {/* Pass fetched data down to Dashboard */}
             <Route path="/" element={<PrivateRoute isAuthenticated={isAuthenticated}><Dashboard dashboardData={dashboardData} onOpenGlobalModal={() => setIsModalOpen(true)} /></PrivateRoute>} />

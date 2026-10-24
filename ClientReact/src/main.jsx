@@ -18,7 +18,7 @@ import App from './App.jsx';
 // =========================================================
 
 // Cấu hình đường dẫn gốc của API server
-axios.defaults.baseURL = 'http://localhost:8080'; 
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080'; 
 
 // Cấu hình interceptor để tự động gắn token vào header Authorization
 axios.interceptors.request.use(
