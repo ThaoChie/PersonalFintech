@@ -1,7 +1,6 @@
 # OWLFIN - Personal Finance Management Application
 
 > **Hệ thống Quản lý Tài chính Cá nhân Chuẩn mực theo Phương pháp 6 Chiếc Hũ (JARS System)**  
-> *Ngôn ngữ thiết kế tối giản, hiện đại mang bản sắc Đại học Việt Nhật (VJU)*
 
 [![.NET](https://img.shields.io/badge/.NET-9.0%20%2F%2010.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react)](https://react.dev/)
@@ -16,9 +15,7 @@
 
 **OWLFIN** là ứng dụng web quản lý tài chính cá nhân toàn diện, hỗ trợ người dùng xây dựng thói quen quản lý dòng tiền kỷ luật và khoa học thông qua **Quy tắc 6 Chiếc Hũ Tài Chính** (*JARS System của T. Harv Eker*). 
 
-Hệ thống cung cấp trải nghiệm theo dõi tài sản thời gian thực, tự động hóa phân bổ các nguồn thu nhập theo tỷ lệ khoa học, tính toán ngân sách chi tiêu an toàn hàng ngày và chủ động phát cảnh báo khi người dùng vượt quá hạn mức an toàn.
-
-Ứng dụng được thiết kế theo phong cách tối giản chuẩn **VJU Style** (sử dụng các gam màu chủ đạo Đỏ Bordeaux, Trắng, Xám ghi nhạt) mang lại sự trang nhã, hiện đại và tập trung tối đa vào dữ liệu tài chính của người dùng.
+Hệ thống cung cấp trải nghiệm theo dõi và ghi chép tài chính cá nhân, tính toán ngân sách chi tiêu an toàn hàng ngày và chủ động phát cảnh báo khi người dùng vượt quá hạn mức an toàn.
 
 Target URL: https://personal-fintech-pink.vercel.app/
 
