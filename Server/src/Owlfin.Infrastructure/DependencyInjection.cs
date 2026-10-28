@@ -81,12 +81,23 @@ namespace Owlfin.Infrastructure
             if (trimmed.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
             {
                 var uri = new Uri(trimmed);
-                var userInfo = uri.UserInfo.Split(':');
-                var user = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : string.Empty;
-                var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+                var user = string.Empty;
+                var pass = string.Empty;
+
+                if (!string.IsNullOrEmpty(uri.UserInfo))
+                {
+                    var parts = uri.UserInfo.Split(new[] { ':' }, 2);
+                    user = Uri.UnescapeDataString(parts[0]);
+                    if (parts.Length > 1)
+                    {
+                        pass = Uri.UnescapeDataString(parts[1]);
+                    }
+                }
+
                 var database = uri.AbsolutePath.TrimStart('/');
                 var port = uri.Port > 0 ? uri.Port : 3306;
-                return $"Server={uri.Host};Port={port};Database={database};User={user};Password={pass};SslMode=Required;";
+                var escapedPass = pass.Replace("\"", "\"\"");
+                return $"Server={uri.Host};Port={port};Database={database};User={user};Password=\"{escapedPass}\";SslMode=Required;";
             }
 
             // Nếu người dùng nhập trực tiếp host và các tham số mà quên "Server=" ở đầu
