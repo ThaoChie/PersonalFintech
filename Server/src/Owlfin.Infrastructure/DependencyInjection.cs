@@ -14,12 +14,27 @@ namespace Owlfin.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var rawConnectionString = configuration.GetConnectionString("DefaultConnection")
+                                      ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+                                      ?? Environment.GetEnvironmentVariable("DefaultConnection");
 
-            if (!string.IsNullOrEmpty(connectionString))
+            if (!string.IsNullOrEmpty(rawConnectionString))
             {
+                var connectionString = NormalizeConnectionString(rawConnectionString);
+
+                ServerVersion serverVersion;
+                try
+                {
+                    serverVersion = ServerVersion.AutoDetect(connectionString);
+                }
+                catch
+                {
+                    // Fallback sang chuẩn MySQL 8.0 nếu chưa thể auto-detect lúc khởi tạo
+                    serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
+                }
+
                 services.AddDbContext<AppDbContext>(options =>
-                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+                    options.UseMySql(connectionString, serverVersion));
             }
 
             services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
@@ -48,6 +63,43 @@ namespace Owlfin.Infrastructure
             });
 
             return services;
+        }
+
+        public static string NormalizeConnectionString(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return raw ?? string.Empty;
+
+            var trimmed = raw.Trim().Trim('"', '\'');
+
+            // Hỗ trợ định dạng URI: mysql://user:pass@host:port/database?ssl-mode=...
+            if (trimmed.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+            {
+                var uri = new Uri(trimmed);
+                var userInfo = uri.UserInfo.Split(':');
+                var user = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : string.Empty;
+                var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+                var database = uri.AbsolutePath.TrimStart('/');
+                var port = uri.Port > 0 ? uri.Port : 3306;
+                return $"Server={uri.Host};Port={port};Database={database};User={user};Password={pass};SslMode=Required;";
+            }
+
+            // Nếu người dùng nhập trực tiếp host và các tham số mà quên "Server=" ở đầu
+            // Ví dụ: "mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;..."
+            if (!trimmed.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
+                !trimmed.Contains("Host=", StringComparison.OrdinalIgnoreCase) &&
+                !trimmed.Contains("Data Source=", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed = "Server=" + trimmed;
+            }
+
+            // Đảm bảo SslMode=Required cho database đám mây Aiven
+            if (trimmed.Contains("aivencloud.com", StringComparison.OrdinalIgnoreCase) &&
+                !trimmed.Contains("ssl", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed = trimmed.TrimEnd(';') + ";SslMode=Required;";
+            }
+
+            return trimmed;
         }
     }
 }

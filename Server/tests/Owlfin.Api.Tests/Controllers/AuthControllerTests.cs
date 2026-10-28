@@ -48,5 +48,20 @@ namespace Owlfin.Api.Tests.Controllers
             okResult.Should().NotBeNull();
             okResult!.StatusCode.Should().Be(200);
         }
+
+        [Theory]
+        [InlineData("mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret",
+                    "Server=mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret;SslMode=Required;")]
+        [InlineData("Server=mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret",
+                    "Server=mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret;SslMode=Required;")]
+        [InlineData("\"mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret\"",
+                    "Server=mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret;SslMode=Required;")]
+        [InlineData("mysql://avnadmin:secret@mysql-31de94ee-jarapp.a.aivencloud.com:26909/defaultdb",
+                    "Server=mysql-31de94ee-jarapp.a.aivencloud.com;Port=26909;Database=defaultdb;User=avnadmin;Password=secret;SslMode=Required;")]
+        public void NormalizeConnectionString_HandlesMissingServerPrefixAndAivenUri(string input, string expected)
+        {
+            var result = Owlfin.Infrastructure.DependencyInjection.NormalizeConnectionString(input);
+            result.Should().Be(expected);
+        }
     }
 }
