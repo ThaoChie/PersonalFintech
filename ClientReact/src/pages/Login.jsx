@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import Swal from 'sweetalert2';
+import { showSuccess, showError, showWarning } from '../common/toast';
 import vjuLogo from '../assets/logoVJU.png';
+import { useAuthStore } from '../stores/authStore';
 
 const Login = ({ onLoginSuccess, initialMode = 'login' }) => {
     const location = useLocation();
     const isRegisterRoute = location.pathname === '/register' || initialMode === 'register';
     const [isLoginView, setIsLoginView] = useState(!isRegisterRoute);
+    const { login, register } = useAuthStore();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -28,58 +29,42 @@ const Login = ({ onLoginSuccess, initialMode = 'login' }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Kiểm tra độ dài mật khẩu khi đăng ký (tối thiểu 8 ký tự theo BR-02)
+        if (!isLoginView && (!formData.password || formData.password.length < 8)) {
+            showWarning('Mật khẩu phải có tối thiểu 8 ký tự.', 'Mật khẩu không hợp lệ');
+            return;
+        }
+
         // Kiểm tra xác nhận mật khẩu khi đăng ký
         if (!isLoginView && formData.password !== formData.confirmPassword) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Mật khẩu không khớp',
-                text: 'Mật khẩu xác nhận phải trùng khớp với mật khẩu đã nhập.',
-                confirmButtonColor: '#B91C1C'
-            });
+            showWarning('Mật khẩu xác nhận phải trùng khớp với mật khẩu đã nhập.', 'Mật khẩu không khớp');
             return;
         }
 
         setIsLoading(true);
 
-        const endpoint = isLoginView ? '/api/Auth/login' : '/api/Auth/register';
-        const payload = isLoginView 
-            ? { email: formData.email, password: formData.password } 
-            : { 
-                fullName: formData.fullName, 
-                username: formData.email, 
-                email: formData.email, 
-                password: formData.password 
-              };
-        
         try {
-            const response = await axios.post(endpoint, payload);
-            if (response.data && response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('user', JSON.stringify(response.data));
-                onLoginSuccess();
+            if (isLoginView) {
+                await login({ email: formData.email, password: formData.password });
+                showSuccess('Đăng nhập thành công!');
+                if (onLoginSuccess) onLoginSuccess();
                 navigate('/');
             } else {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Đăng ký thành công!',
-                    text: 'Tài khoản đã được tạo với 6 hũ mặc định. Vui lòng đăng nhập.',
-                    timer: 2500,
-                    showConfirmButton: true,
-                    confirmButtonColor: '#B91C1C'
+                await register({
+                    fullName: formData.fullName,
+                    username: formData.email,
+                    email: formData.email,
+                    password: formData.password
                 });
+                showSuccess('Tài khoản đã được tạo với 6 hũ mặc định. Vui lòng đăng nhập.', 'Đăng ký thành công!');
                 setIsLoginView(true);
             }
         } catch (error) {
             const errorText = typeof error.response?.data === 'string' 
                 ? error.response.data 
-                : error.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+                : error.response?.data?.message || error.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
             
-            Swal.fire({
-                icon: 'error',
-                title: isLoginView ? 'Đăng nhập thất bại' : 'Đăng ký thất bại',
-                text: errorText,
-                confirmButtonColor: '#B91C1C'
-            });
+            showError(errorText, isLoginView ? 'Đăng nhập thất bại' : 'Đăng ký thất bại');
         } finally {
             setIsLoading(false);
         }

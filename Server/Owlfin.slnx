@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Owlfin.Api/Owlfin.Api.csproj" />
+    <Project Path="src/Owlfin.Application/Owlfin.Application.csproj" />
+    <Project Path="src/Owlfin.Domain/Owlfin.Domain.csproj" />
+    <Project Path="src/Owlfin.Infrastructure/Owlfin.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Owlfin.Api.Tests/Owlfin.Api.Tests.csproj" />
+    <Project Path="tests/Owlfin.Application.Tests/Owlfin.Application.Tests.csproj" />
+  </Folder>
+</Solution>

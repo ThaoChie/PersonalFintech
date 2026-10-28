@@ -1,85 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import vjuLogo from '../assets/logoVJU.png';
+import { useLocation } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import { useNotificationStore } from '../stores/notificationStore';
 
-const Header = ({ onLogout }) => {
-    const [user, setUser] = useState({ fullName: 'Admin', username: 'admin' });
-    const [unreadCount, setUnreadCount] = useState(0);
+// =========================================================
+// HEADER COMPONENT (Tầng Components)
+// Thiết kế theo chuẩn giao diện E-Form Chấm Điểm Rèn Luyện:
+// - Bên trái: Tiêu đề trang hiện tại (Tổng quan, Quản lý Hũ, v.v.)
+// - Bên phải: Pill phân loại ("Cá nhân"), Chuông thông báo (BUG-13), Avatar tròn than đậm + Tên người dùng
+// =========================================================
+
+const Header = () => {
+    const location = useLocation();
+    const { user } = useAuthStore();
+    const { notifications, unreadCount, fetchNotifications, fetchUnreadCount, markAllAsRead } = useNotificationStore();
     const [showNotifications, setShowNotifications] = useState(false);
-    const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
-        // Load profile
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        if (storedUser) {
-            setUser(storedUser);
-        }
-
-        axios.get('/api/Auth/profile')
-            .then(res => {
-                if (res.data) {
-                    setUser(res.data);
-                    localStorage.setItem('user', JSON.stringify(res.data));
-                }
-            })
-            .catch(() => {});
-
-        // Load unread count
-        axios.get('/api/Notification/unread-count')
-            .then(res => setUnreadCount(res.data || 0))
-            .catch(() => {});
-    }, []);
+        fetchUnreadCount();
+    }, [fetchUnreadCount]);
 
     const toggleNotifications = async () => {
         if (!showNotifications) {
-            try {
-                const res = await axios.get('/api/Notification');
-                setNotifications(res.data || []);
-            } catch (err) {
-                console.error(err);
-            }
+            await fetchNotifications();
         }
         setShowNotifications(!showNotifications);
     };
 
-    const markAllRead = async () => {
-        try {
-            await axios.put('/api/Notification/read-all');
-            setUnreadCount(0);
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        } catch (err) {
-            console.error(err);
+    const handleMarkAllRead = async () => {
+        await markAllAsRead();
+    };
+
+    // Xác định tiêu đề trang dựa vào URL pathname
+    const getPageTitle = () => {
+        switch (location.pathname) {
+            case '/':
+                return 'Tổng quan';
+            case '/jars':
+                return 'Quản lý Hũ';
+            case '/history':
+                return 'Lịch sử giao dịch';
+            case '/settings':
+                return 'Hồ sơ cá nhân';
+            default:
+                return 'Tổng quan';
         }
     };
+
+    const displayName = user?.fullName || user?.username || 'Cá nhân';
+    const initialLetter = displayName.charAt(0).toUpperCase();
 
     return (
         <header 
             style={{ 
-                height: '56px', 
+                height: '60px', 
                 backgroundColor: '#FFFFFF', 
                 borderBottom: '1px solid #E5E7EB',
                 position: 'fixed',
                 top: 0,
-                left: 0,
+                left: '240px',
                 right: 0,
-                zIndex: 1050,
+                zIndex: 990,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0 24px'
+                padding: '0 28px'
             }}
         >
-            {/* Left: VJU Logo & System Title */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <img src={vjuLogo} alt="VJU Logo" style={{ height: '32px', width: 'auto' }} />
-                <span style={{ height: '18px', width: '1px', backgroundColor: '#E5E7EB' }}></span>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: '#1F1F1F', letterSpacing: '0.5px' }}>
-                    OWLFIN
-                </span>
+            {/* Left: Dynamic Page Title */}
+            <div>
+                <h1 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                    {getPageTitle()}
+                </h1>
             </div>
 
-            {/* Right: Notifications & Profile Avatar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative' }}>
+            {/* Right: Role Pill, Notification Bell, User Avatar & Name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
+                {/* Pill Tag */}
+                <span 
+                    style={{ 
+                        backgroundColor: '#F3F4F6', 
+                        color: '#4B5563', 
+                        fontSize: '11.5px', 
+                        fontWeight: 600, 
+                        padding: '3px 10px', 
+                        borderRadius: '9999px',
+                        border: '1px solid #E5E7EB'
+                    }}
+                >
+                    {user?.role === 'admin' ? 'Hệ thống' : 'Cá nhân'}
+                </span>
+
                 {/* Notification Bell */}
                 <div style={{ position: 'relative' }}>
                     <button 
@@ -88,13 +99,17 @@ const Header = ({ onLogout }) => {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            padding: '8px',
-                            color: '#1F1F1F',
+                            padding: '6px 8px',
+                            color: '#4B5563',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            borderRadius: '6px'
+                            borderRadius: '8px',
+                            position: 'relative',
+                            transition: 'background 0.15s ease'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         title="Thông báo"
                     >
                         <i className="fa-regular fa-bell" style={{ fontSize: '16px' }}></i>
@@ -104,18 +119,18 @@ const Header = ({ onLogout }) => {
                                 id="notification-badge"
                                 style={{
                                     position: 'absolute',
-                                    top: '0px',
-                                    right: '0px',
-                                    backgroundColor: '#D32F2F',
+                                    top: '-2px',
+                                    right: '-2px',
+                                    backgroundColor: '#991B1B',
                                     color: '#FFFFFF',
                                     borderRadius: '50%',
-                                    fontSize: '11px',
+                                    fontSize: '10.5px',
                                     fontWeight: 700,
-                                    padding: '1px 5px',
-                                    minWidth: '18px',
-                                    height: '18px',
+                                    padding: '1px 4px',
+                                    minWidth: '16px',
+                                    height: '16px',
                                     textAlign: 'center',
-                                    lineHeight: '16px',
+                                    lineHeight: '14px',
                                     display: 'inline-block'
                                 }}
                             >
@@ -134,16 +149,19 @@ const Header = ({ onLogout }) => {
                                 width: '320px',
                                 backgroundColor: '#FFFFFF',
                                 border: '1px solid #E5E7EB',
-                                borderRadius: '6px',
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                                borderRadius: '10px',
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
                                 zIndex: 1100,
                                 overflow: 'hidden'
                             }}
                         >
                             <div style={{ padding: '12px 16px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#1F1F1F' }}>Thông báo</span>
+                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>Thông báo</span>
                                 {unreadCount > 0 && (
-                                    <button onClick={markAllRead} className="btn-vju-text" style={{ fontSize: '12px', padding: 0 }}>
+                                    <button 
+                                        onClick={handleMarkAllRead} 
+                                        style={{ border: 'none', background: 'transparent', color: '#991B1B', fontSize: '12px', fontWeight: 500, cursor: 'pointer', padding: 0 }}
+                                    >
                                         Đánh dấu đã đọc
                                     </button>
                                 )}
@@ -160,10 +178,10 @@ const Header = ({ onLogout }) => {
                                             style={{
                                                 padding: '10px 16px',
                                                 borderBottom: '1px solid #F3F4F6',
-                                                backgroundColor: n.isRead ? '#FFFFFF' : '#FAFAFA'
+                                                backgroundColor: n.isRead ? '#FFFFFF' : '#FEF2F2'
                                             }}
                                         >
-                                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1F1F1F', marginBottom: '2px' }}>
+                                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827', marginBottom: '2px' }}>
                                                 {n.title}
                                             </div>
                                             <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.4 }}>
@@ -177,42 +195,28 @@ const Header = ({ onLogout }) => {
                     )}
                 </div>
 
-                <span style={{ height: '18px', width: '1px', backgroundColor: '#E5E7EB' }}></span>
-
                 {/* Avatar & User Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div 
                         style={{
                             width: '32px',
                             height: '32px',
                             borderRadius: '50%',
-                            backgroundColor: '#F3F4F6',
-                            border: '1px solid #E5E7EB',
+                            backgroundColor: '#111827',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 600,
-                            fontSize: '13px',
-                            color: '#1F1F1F'
+                            fontSize: '12.5px',
+                            color: '#FFFFFF'
                         }}
                     >
-                        {(user.fullName || user.username || 'A').charAt(0).toUpperCase()}
+                        {initialLetter}
                     </div>
-                    <span style={{ fontSize: '14px', fontWeight: 500, color: '#1F1F1F' }}>
-                        {user.fullName || user.username || 'Admin'}
+                    <span style={{ fontSize: '13.5px', fontWeight: 500, color: '#111827' }}>
+                        {displayName}
                     </span>
                 </div>
-
-                {/* Logout Button */}
-                <button 
-                    onClick={onLogout}
-                    className="btn-vju-text"
-                    style={{ fontSize: '13px', marginLeft: '8px' }}
-                    title="Đăng xuất"
-                >
-                    <i className="fa-solid fa-arrow-right-from-bracket" style={{ fontSize: '14px' }}></i>
-                    <span>Đăng xuất</span>
-                </button>
             </div>
         </header>
     );

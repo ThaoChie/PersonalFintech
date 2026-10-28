@@ -117,14 +117,17 @@ graph TD
 │   │   └── assets/         # Logo VJU, Stylesheet (App.css, index.css)
 │   ├── vite.config.js      # Cấu hình cổng 3000 và proxy /api sang backend
 │   └── package.json
-├── Server/                 # Dịch vụ Backend ASP.NET Core 9 Web API
-│   ├── Controller/         # AuthController, JasController, TransactionController,
-│   │                       # DashboardController, NotificationController
-│   ├── Models/             # Entity Models (User, Jar, Transaction, Notification)
-│   ├── Data/               # AppDbContext, Database Migrations
-│   ├── DTOs/               # Data Transfer Objects cho request/response
-│   ├── Properties/         # launchSettings.json (Port 8080)
-│   └── Program.cs          # Cấu hình DI, Middleware, JWT, CORS, Routing
+├── Server/                 # Backend Clean Architecture Solution
+│   ├── src/
+│   │   ├── Owlfin.Domain/          # Lớp trung tâm: Entities, Enums, Exceptions (độc lập hoàn toàn)
+│   │   ├── Owlfin.Application/     # Logic nghiệp vụ, DTOs, Interfaces, Services, DI
+│   │   ├── Owlfin.Infrastructure/  # EF Core DbContext, Migrations, Identity/JWT, DI
+│   │   └── Owlfin.Api/             # Web API Controllers, Middlewares, Program.cs, DI host
+│   ├── tests/                      # Unit test & Integration test suites
+│   │   ├── Owlfin.Application.Tests/
+│   │   └── Owlfin.Api.Tests/
+│   ├── Owlfin.slnx         # Solution file backend
+│   └── Dockerfile          # Multi-stage Docker build cho Owlfin.Api
 ├── docker-compose.yml      # Cấu hình container dịch vụ MySQL 9.0
 ├── SYSTEM_SPECIFICATION.md # Tài liệu đặc tả hệ thống và thiết kế kỹ thuật chi tiết
 ├── USER_REQUIREMENTS_DOCUMENT.md # Tài liệu yêu cầu người dùng (URD)
@@ -145,13 +148,13 @@ graph TD
 docker compose up -d db
 ```
 * **Cổng**: `localhost:3306`
-* **Tài khoản**: `root` / Mật khẩu: `YOUR_PASSWORD` *(Cấu hình trong `docker-compose.yml` hoặc `Server/appsettings.json`)*
+* **Tài khoản**: `root` / Mật khẩu: `YOUR_PASSWORD` *(Cấu hình trong `docker-compose.yml` hoặc `Server/src/Owlfin.Api/appsettings.json`)*
 > **Lưu ý bảo mật:** Hãy thay đổi giá trị `YOUR_PASSWORD` bằng mật khẩu an toàn của riêng bạn trước khi triển khai.
 
-### Bước 2: Khởi động Backend API (.NET)
+### Bước 2: Khởi động Backend API (.NET Clean Architecture)
 ```bash
 cd Server
-dotnet run --launch-profile http
+dotnet run --project src/Owlfin.Api/Owlfin.Api.csproj --launch-profile http
 ```
 * **API Service**: `http://localhost:8080`
 * **Swagger UI Documentation**: [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)

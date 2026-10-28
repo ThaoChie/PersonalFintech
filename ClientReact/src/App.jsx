@@ -1,140 +1,139 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import axios from 'axios';
 
-// Import Layout & Pages
+// Import Providers (Stores)
+import { AppProvider, useAuthStore } from './stores';
+import { ROLES, hasPermission } from './common/roles';
+
+// Import Layout & Components
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import GlobalTransactionModal from './components/GlobalTransactionModal';
+
+// Import Pages
 import Dashboard from './pages/Dashboard';
 import Jars from './pages/Jars';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 
-// Import Modals
-import GlobalTransactionModal from './components/GlobalTransactionModal';
+// =========================================================
+// ROUTE GUARD THEO ROLE & AUTH (Role-based Guard)
+// =========================================================
+const RoleGuard = ({ children, requiredRole, requiredPermission }) => {
+    const { isAuthenticated, user } = useAuthStore();
 
-const PrivateRoute = ({ children, isAuthenticated }) => {
-  return isAuthenticated ? children : <Navigate to="/login" />;
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (requiredRole && user.role !== requiredRole && user.role !== ROLES.ADMIN) {
+        return <Navigate to="/" replace />;
+    }
+
+    if (requiredPermission && !hasPermission(user.role, requiredPermission)) {
+        return <Navigate to="/" replace />;
+    }
+
+    return children;
 };
 
+// =========================================================
+// MAIN APP CONTENT (Nằm trong AppProvider)
+// =========================================================
+function AppContent() {
+    const { isAuthenticated } = useAuthStore();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    return (
+        <Router>
+            {isAuthenticated && <Header />}
+            <div className="d-flex">
+                {isAuthenticated && <Sidebar />}
+
+                <main 
+                    className={`flex-grow-1 ${isAuthenticated ? 'p-4' : 'p-0'}`} 
+                    style={{ 
+                        marginLeft: isAuthenticated ? '240px' : '0', 
+                        marginTop: isAuthenticated ? '60px' : '0', 
+                        backgroundColor: isAuthenticated ? '#F9FAFB' : '#FFFFFF', 
+                        minHeight: isAuthenticated ? 'calc(100vh - 60px)' : '100vh',
+                        transition: 'all 0.2s' 
+                    }}
+                >
+                    <Routes>
+                        {/* Public Auth Routes */}
+                        <Route 
+                            path="/login" 
+                            element={!isAuthenticated ? <Login initialMode="login" /> : <Navigate to="/" replace />} 
+                        />
+                        <Route 
+                            path="/register" 
+                            element={!isAuthenticated ? <Login initialMode="register" /> : <Navigate to="/" replace />} 
+                        />
+                        
+                        {/* Protected Routes (Guard theo quyền) */}
+                        <Route 
+                            path="/" 
+                            element={
+                                <RoleGuard requiredPermission="view_dashboard">
+                                    <Dashboard onOpenGlobalModal={() => setIsModalOpen(true)} />
+                                </RoleGuard>
+                            } 
+                        />
+                        <Route 
+                            path="/jars" 
+                            element={
+                                <RoleGuard requiredPermission="manage_jars">
+                                    <Jars />
+                                </RoleGuard>
+                            } 
+                        />
+                        <Route 
+                            path="/history" 
+                            element={
+                                <RoleGuard requiredPermission="manage_transactions">
+                                    <History />
+                                </RoleGuard>
+                            } 
+                        />
+                        <Route 
+                            path="/settings" 
+                            element={
+                                <RoleGuard requiredPermission="update_profile">
+                                    <Settings />
+                                </RoleGuard>
+                            } 
+                        />
+
+                        {/* Fallback route */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </main>
+            </div>
+
+            {/* Modal Thêm Giao Dịch Toàn Cục */}
+            {isAuthenticated && (
+                <GlobalTransactionModal 
+                    show={isModalOpen} 
+                    handleClose={() => setIsModalOpen(false)}
+                    onSaveSuccess={() => {
+                        // Tự động reload nhẹ trang hiện tại để các view đồng bộ
+                        window.dispatchEvent(new Event('transaction-saved'));
+                    }}
+                />
+            )}
+        </Router>
+    );
+}
+
+// Root App Component bọc AppProvider
 function App() {
-  // --- STATE ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Dashboard-specific data, managed globally to allow refresh from modal
-  const [dashboardData, setDashboardData] = useState({
-      stats: { totalAssets: 0, income: 0, expense: 0 },
-      jars: [],
-      recentTransactions: [],
-      userName: 'Bạn',
-      isLoading: true
-  });
-
-  // --- DATA FETCHING ---
-  const fetchData = useCallback(async () => {
-    if (!isAuthenticated) return; // Don't fetch if not logged in
-
-    setDashboardData(prev => ({ ...prev, isLoading: true }));
-    try {
-        const [jarsRes, transRes, profileRes] = await Promise.all([
-            axios.get('/api/Jars'),
-            axios.get('/api/Transactions?_sort=date&_order=desc'),
-            axios.get('/api/auth/profile').catch(() => ({ data: { name: 'Bạn' } }))
-        ]);
-
-        const jarsData = jarsRes.data || [];
-        const allTrans = transRes.data || [];
-        
-        const totalAssets = jarsData.reduce((sum, jar) => sum + jar.balance, 0);
-        const monthlyIncome = allTrans.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-        const monthlyExpense = allTrans.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0);
-
-        setDashboardData({
-            stats: { totalAssets, income: monthlyIncome, expense: Math.abs(monthlyExpense) },
-            jars: jarsData,
-            recentTransactions: allTrans.slice(0, 5),
-            userName: profileRes.data.name,
-            isLoading: false
-        });
-
-    } catch (error) {
-        console.error("Lỗi tải dữ liệu chung:", error);
-        setDashboardData(prev => ({ ...prev, isLoading: false }));
-    }
-  }, [isAuthenticated]);
-
-  // Initial auth check and data fetch
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false); // App loading is done
-  }, []);
-
-  // Fetch data when authentication status changes
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-
-  // --- HANDLERS ---
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
-  };
-
-  if (isLoading) {
-    return <div className="spinner-border"></div>; // Initial app loading
-  }
-
-  return (
-    <Router>
-      {isAuthenticated && <Header onLogout={handleLogout} />}
-      <div className="d-flex">
-        {isAuthenticated && <Sidebar onOpenGlobalModal={() => setIsModalOpen(true)} />}
-
-        <main 
-          className={`flex-grow-1 ${isAuthenticated ? 'p-4' : 'p-0'}`} 
-          style={{ 
-            marginLeft: isAuthenticated ? '240px' : '0', 
-            marginTop: isAuthenticated ? '56px' : '0', 
-            backgroundColor: isAuthenticated ? '#F9FAFB' : '#FFFFFF', 
-            minHeight: isAuthenticated ? 'calc(100vh - 56px)' : '100vh',
-            transition: 'all 0.3s' 
-          }}
-        >
-          <Routes>
-            <Route path="/login" element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} initialMode="login" /> : <Navigate to="/" />} />
-            <Route path="/register" element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} initialMode="register" /> : <Navigate to="/" />} />
-            
-            {/* Pass fetched data down to Dashboard */}
-            <Route path="/" element={<PrivateRoute isAuthenticated={isAuthenticated}><Dashboard dashboardData={dashboardData} onOpenGlobalModal={() => setIsModalOpen(true)} /></PrivateRoute>} />
-            
-            <Route path="/jars" element={<PrivateRoute isAuthenticated={isAuthenticated}><Jars /></PrivateRoute>} />
-            <Route path="/history" element={<PrivateRoute isAuthenticated={isAuthenticated}><History /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute isAuthenticated={isAuthenticated}><Settings /></PrivateRoute>} />
-
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
-
-      {isAuthenticated && (
-        <GlobalTransactionModal 
-            show={isModalOpen} 
-            handleClose={() => setIsModalOpen(false)}
-            onSaveSuccess={fetchData} // Pass the refresh function
-        />
-      )}
-    </Router>
-  );
+    return (
+        <AppProvider>
+            <AppContent />
+        </AppProvider>
+    );
 }
 
 export default App;

@@ -1,60 +1,114 @@
 /* --- GOOGLE FONTS (INTER) --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* --- BIẾN CSS TOÀN CỤC --- */
+/* --- BIẾN CSS TOÀN CỤC THEO PHONG CÁCH VJU / E-FORM CHẤM ĐIỂM RÈN LUYỆN --- */
 :root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --vju-red: #8B1515;
+  --vju-red-hover: #731212;
+  --vju-red-light: #FEF2F2;
+  --vju-red-border: #FCA5A5;
+  --vju-dark: #111827;
+  --vju-gray-dark: #374151;
+  --vju-gray: #4B5563;
+  --vju-gray-light: #9CA3AF;
+  --vju-border: #E5E7EB;
+  --vju-bg: #F9FAFB;
   --bs-body-font-family: 'Inter', sans-serif;
-  --bs-body-bg: #f3f4f6;
+  --bs-body-bg: #F9FAFB;
 }
 
 body {
   font-family: var(--bs-body-font-family);
   background-color: var(--bs-body-bg);
+  color: var(--vju-dark);
+  margin: 0;
+  padding: 0;
 }
 
 /* --- CUSTOM SCROLLBAR --- */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #F3F4F6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c7cdd1;
-  border-radius: 10px;
+  background: #D1D5DB;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b0b5b9;
+  background: #9CA3AF;
 }
 
-
-/* --- CÁC LỚP TIỆN ÍCH --- */
-
-/* Gradient Tím-Hồng chủ đạo */
-.bg-gradient-primary {
-  background-image: var(--primary-gradient) !important;
+/* --- BUTTON UTILITIES (CHỈ DÙNG ĐỎ, ĐEN, XÁM) --- */
+.btn-vju-primary {
+  background-color: var(--vju-red) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--vju-red) !important;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-/* Hiệu ứng nổi lên cho Card */
+.btn-vju-primary:hover {
+  background-color: var(--vju-red-hover) !important;
+  border-color: var(--vju-red-hover) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-vju-dark {
+  background-color: var(--vju-dark) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--vju-dark) !important;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-vju-dark:hover {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+.btn-vju-outline {
+  background-color: #FFFFFF !important;
+  color: var(--vju-gray-dark) !important;
+  border: 1px solid var(--vju-border) !important;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-vju-outline:hover {
+  background-color: #F3F4F6 !important;
+  color: var(--vju-dark) !important;
+  border-color: #D1D5DB !important;
+}
+
+.btn-vju-text {
+  background: none !important;
+  border: none !important;
+  color: var(--vju-gray) !important;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.btn-vju-text:hover {
+  color: var(--vju-red) !important;
+}
+
+/* Card hover */
 .card-hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
-}
-
-/* Gradient cho chữ */
-.text-gradient-primary {
-    background: var(--primary-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-fill-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
 }
