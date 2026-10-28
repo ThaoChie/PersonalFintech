@@ -34,7 +34,13 @@ namespace Owlfin.Infrastructure
                 }
 
                 services.AddDbContext<AppDbContext>(options =>
-                    options.UseMySql(connectionString, serverVersion));
+                    options.UseMySql(connectionString, serverVersion, mySqlOptions =>
+                    {
+                        mySqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorNumbersToAdd: null);
+                    }));
             }
 
             services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
